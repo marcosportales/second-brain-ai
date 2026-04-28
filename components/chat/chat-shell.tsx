@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Citation = {
   documentId: string;
@@ -48,6 +48,11 @@ export function ChatShell({
   const [chatToDelete, setChatToDelete] = useState<ChatListItem | null>(null);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    messageInputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -147,7 +152,7 @@ export function ChatShell({
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
-      <aside className="rounded-xl border border-zinc-200 bg-white p-4">
+      <aside className="h-full min-h-0 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-xl font-semibold">Chats</h3>
           <button
@@ -253,6 +258,7 @@ export function ChatShell({
           }}
         >
           <textarea
+            ref={messageInputRef}
             className="min-h-24 w-full rounded-md border border-zinc-300 p-3 text-sm"
             value={input}
             onChange={(event) => setInput(event.target.value)}
@@ -282,7 +288,7 @@ export function ChatShell({
           </div>
         </form>
       </section>
-      <aside className="hidden rounded-xl border border-zinc-200 bg-white p-4 xl:block">
+      <aside className="hidden h-full min-h-0 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-4 xl:block">
         <h3 className="mb-3 text-sm font-semibold">Últimas citas</h3>
         {latestAssistant?.citations?.length ? (
           <ul className="space-y-2 text-xs">
