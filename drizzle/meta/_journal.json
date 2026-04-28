@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777387307266,
+      "tag": "0000_even_moira_mactaggert",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777399200000,
+      "tag": "0001_chat_message_errors",
+      "breakpoints": true
+    }
+  ]
+}
