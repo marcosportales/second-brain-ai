@@ -1,10 +1,11 @@
 import { streamText } from "ai";
 import { and, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateChatTitle } from "@/lib/ai/title";
+import { AppError } from "@/lib/errors/app-error";
 import { db } from "@/lib/db/client";
 import { chats, messages } from "@/lib/db/schema";
+import { handleRouteError, jsonError } from "@/lib/http/route";
 import { requireUser } from "@/lib/auth/session";
 import { getChatModel } from "@/lib/ai/client";
 import { retrieveRelevantChunks } from "@/lib/rag/retrieval";
@@ -77,11 +78,11 @@ export async function POST(request: Request) {
 
     const parsed = bodySchema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return jsonError("Invalid payload", 400, "INVALID_PAYLOAD");
     }
     const userMessage = extractUserMessage(parsed.data);
     if (!userMessage) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return jsonError("Message is required", 400, "MESSAGE_REQUIRED");
     }
 
     let chatId = chatIdFromQuery ?? parsed.data.chatId;
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     });
 
     if (!chat) {
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      return jsonError("Chat not found", 404, "CHAT_NOT_FOUND");
     }
 
     const hasPreviousMessages = await db.query.messages.findFirst({
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
     if (
       userIdForError &&
       chatIdForError &&
-      !(error instanceof Error && error.message === "Unauthorized")
+      !(error instanceof AppError)
     ) {
       try {
         await db.insert(messages).values({
@@ -192,12 +193,6 @@ export async function POST(request: Request) {
       }
     }
 
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    return NextResponse.json(
-      { error: getFriendlyChatErrorMessage() },
-      { status: 500 },
-    );
+    return handleRouteError(error, getFriendlyChatErrorMessage());
   }
 }

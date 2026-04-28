@@ -1,31 +1,33 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db/client";
 import { chats } from "@/lib/db/schema";
-
-const paramsSchema = z.object({ id: z.string().uuid() });
+import { handleRouteError, parseUuidParam } from "@/lib/http/route";
 
 export async function DELETE(
   _: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const userId = await requireUser();
-  const params = await context.params;
-  const parsed = paramsSchema.safeParse(params);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid chat id" }, { status: 400 });
+  try {
+    const userId = await requireUser();
+    const params = await context.params;
+    const chatId = parseUuidParam(params, "id", "Invalid chat id");
+    if (chatId instanceof NextResponse) {
+      return chatId;
+    }
+
+    const [deleted] = await db
+      .delete(chats)
+      .where(and(eq(chats.id, chatId), eq(chats.userId, userId)))
+      .returning({ id: chats.id });
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleRouteError(error, "Failed to delete chat");
   }
-
-  const [deleted] = await db
-    .delete(chats)
-    .where(and(eq(chats.id, parsed.data.id), eq(chats.userId, userId)))
-    .returning({ id: chats.id });
-
-  if (!deleted) {
-    return NextResponse.json({ error: "Chat not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ success: true });
 }
