@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { LoginForm } from "@/components/auth/login-form";
+import { RegisterForm } from "@/components/auth/register-form";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_1fr]">
@@ -16,28 +16,27 @@ export default function LoginPage() {
               </p>
               <div className="space-y-4">
                 <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Second Brain AI
+                  Crea tu cuenta en Second Brain AI
                 </h1>
                 <p className="max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-                  Centraliza tus documentos, consulta con lenguaje natural y
-                  obtén respuestas trazables con citas para que tu equipo tome
-                  mejores decisiones.
+                  Empieza a organizar conocimiento, consultar documentos con IA
+                  y compartir respuestas confiables con tu equipo.
                 </p>
               </div>
             </div>
 
             <div className="grid gap-3 text-sm text-zinc-200 sm:grid-cols-2">
               <div className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
-                Búsqueda semántica en documentos.
+                Onboarding simple en pocos pasos.
               </div>
               <div className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
-                Respuestas con citas verificables.
+                Privacidad y control de acceso por equipo.
               </div>
               <div className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
-                Streaming en tiempo real para consultas largas.
+                Respuestas con fuentes para validar rápido.
               </div>
               <div className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
-                Espacios privados para tu organización.
+                Experiencia optimizada para trabajo diario.
               </div>
             </div>
           </div>
@@ -46,25 +45,23 @@ export default function LoginPage() {
         <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-7">
           <div className="mb-5 space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
-              Accede a tu cuenta
+              Crear cuenta
             </h2>
             <p className="text-sm text-zinc-600">
-              Inicia sesión para continuar con tu espacio de trabajo.
+              Completa tus datos para empezar a usar la plataforma.
             </p>
           </div>
 
-          <div>
-            <LoginForm />
-          </div>
+          <RegisterForm />
 
           <div className="mt-6 space-y-4 border-t border-zinc-200 pt-4">
             <p className="text-sm text-zinc-600">
-              ¿No tienes cuenta?{" "}
+              ¿Ya tienes cuenta?{" "}
               <Link
-                href="/register"
+                href="/login"
                 className="font-medium text-zinc-900 underline-offset-2 hover:underline"
               >
-                Crear cuenta
+                Iniciar sesión
               </Link>
             </p>
             <Link

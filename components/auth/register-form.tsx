@@ -25,7 +25,6 @@ export function RegisterForm() {
         setMessage(response.ok ? "Cuenta creada. Ya puedes iniciar sesión." : "No se pudo crear la cuenta.");
       }}
     >
-      <h2 className="text-xl font-semibold">Crear cuenta</h2>
       <input
         className="w-full rounded-md border border-zinc-300 px-3 py-2"
         type="text"
