@@ -1,4 +1,5 @@
 import {
+  boolean,
   customType,
   index,
   integer,
@@ -44,6 +45,7 @@ export const users = pgTable("user", {
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
   passwordHash: text("password_hash"),
+  onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
 });
 
 export const accounts = pgTable(
@@ -148,6 +150,8 @@ export const documents = pgTable(
     size: integer("size").notNull(),
     storagePath: text("storage_path").notNull(),
     status: documentStatusEnum("status").notNull().default("uploaded"),
+    sourceType: varchar("source_type", { length: 30 }).notNull().default("document"),
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
     parseError: text("parse_error"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -158,6 +162,101 @@ export const documents = pgTable(
   },
   (table) => ({
     userIdx: index("documents_user_idx").on(table.userId),
+  }),
+);
+
+export const userOnboarding = pgTable(
+  "user_onboarding",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdFirstDocumentAt: timestamp("created_first_document_at", { withTimezone: true }),
+    taggedFirstDocumentAt: timestamp("tagged_first_document_at", { withTimezone: true }),
+    firstSearchAt: timestamp("first_search_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    completedIdx: index("user_onboarding_completed_idx").on(table.completedAt),
+  }),
+);
+
+export const savedSearches = pgTable(
+  "saved_searches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    query: text("query").notNull(),
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    sourceType: varchar("source_type", { length: 30 }),
+    fromDate: timestamp("from_date", { withTimezone: true }),
+    toDate: timestamp("to_date", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("saved_searches_user_idx").on(table.userId),
+  }),
+);
+
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+    eventName: varchar("event_name", { length: 80 }).notNull(),
+    properties: jsonb("properties").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    eventNameIdx: index("analytics_events_name_idx").on(table.eventName),
+    userIdx: index("analytics_events_user_idx").on(table.userId),
+  }),
+);
+
+export const authAttempts = pgTable(
+  "auth_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull(),
+    ip: varchar("ip", { length: 128 }).notNull(),
+    succeeded: boolean("succeeded").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    emailIdx: index("auth_attempts_email_idx").on(table.email),
+    ipIdx: index("auth_attempts_ip_idx").on(table.ip),
+    createdAtIdx: index("auth_attempts_created_idx").on(table.createdAt),
+  }),
+);
+
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("password_reset_tokens_user_idx").on(table.userId),
+    expiresAtIdx: index("password_reset_tokens_expires_idx").on(table.expiresAt),
   }),
 );
 

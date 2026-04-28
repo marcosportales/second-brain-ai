@@ -41,17 +41,13 @@ export function ChatShell({
   initialChatId?: string;
 }) {
   const router = useRouter();
-  const [currentChatId, setCurrentChatId] = useState(initialChatId);
+  const [currentChatId, setCurrentChatId] = useState<string | undefined>(initialChatId);
   const [chatHistory, setChatHistory] = useState<ChatListItem[]>([]);
   const [latestAssistantCitations, setLatestAssistantCitations] = useState<Citation[]>([]);
   const [input, setInput] = useState("");
   const [chatToDelete, setChatToDelete] = useState<ChatListItem | null>(null);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentChatId(initialChatId);
-  }, [initialChatId]);
 
   useEffect(() => {
     const controller = new AbortController();

@@ -5,7 +5,7 @@ import { generateChatTitle } from "@/lib/ai/title";
 import { AppError } from "@/lib/errors/app-error";
 import { db } from "@/lib/db/client";
 import { chats, messages } from "@/lib/db/schema";
-import { handleRouteError, jsonError } from "@/lib/http/route";
+import { getRequestId, handleRouteError, jsonError } from "@/lib/http/route";
 import { requireUser } from "@/lib/auth/session";
 import { getChatModel } from "@/lib/ai/client";
 import { retrieveRelevantChunks } from "@/lib/rag/retrieval";
@@ -67,8 +67,10 @@ function getFriendlyChatErrorMessage(): string {
 }
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
   let userIdForError: string | null = null;
   let chatIdForError: string | null = null;
+  const startedAt = Date.now();
   try {
     const userId = await requireUser();
     userIdForError = userId;
@@ -78,11 +80,11 @@ export async function POST(request: Request) {
 
     const parsed = bodySchema.safeParse(await request.json());
     if (!parsed.success) {
-      return jsonError("Invalid payload", 400, "INVALID_PAYLOAD");
+      return jsonError("Invalid payload", 400, "INVALID_PAYLOAD", requestId);
     }
     const userMessage = extractUserMessage(parsed.data);
     if (!userMessage) {
-      return jsonError("Message is required", 400, "MESSAGE_REQUIRED");
+      return jsonError("Message is required", 400, "MESSAGE_REQUIRED", requestId);
     }
 
     let chatId = chatIdFromQuery ?? parsed.data.chatId;
@@ -100,7 +102,7 @@ export async function POST(request: Request) {
     });
 
     if (!chat) {
-      return jsonError("Chat not found", 404, "CHAT_NOT_FOUND");
+      return jsonError("Chat not found", 404, "CHAT_NOT_FOUND", requestId);
     }
 
     const hasPreviousMessages = await db.query.messages.findFirst({
@@ -159,10 +161,18 @@ export async function POST(request: Request) {
       },
     });
 
-    logger.info("chat_response_streamed", { chatId, userId, chunks: chunks.length });
+    logger.info("chat_response_streamed", {
+      requestId,
+      route: "/api/chat",
+      chatId,
+      userId,
+      chunks: chunks.length,
+      latencyMs: Date.now() - startedAt,
+    });
     return result.toUIMessageStreamResponse({
       headers: {
         "x-chat-id": chatId,
+        "x-request-id": requestId,
       },
     });
   } catch (error) {
@@ -193,6 +203,14 @@ export async function POST(request: Request) {
       }
     }
 
+    logger.error("chat_route_failed", {
+      requestId,
+      route: "/api/chat",
+      userId: userIdForError,
+      chatId: chatIdForError,
+      latencyMs: Date.now() - startedAt,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return handleRouteError(error, getFriendlyChatErrorMessage());
   }
 }

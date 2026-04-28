@@ -11,6 +11,8 @@ export async function GET() {
       id: documents.id,
       name: documents.name,
       status: documents.status,
+      sourceType: documents.sourceType,
+      tags: documents.tags,
       parseError: documents.parseError,
       size: documents.size,
       createdAt: documents.createdAt,

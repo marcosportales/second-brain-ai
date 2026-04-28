@@ -6,12 +6,18 @@ type Params = Record<string, string | string[] | undefined>;
 
 const uuidParamsSchema = z.record(z.string(), z.string().uuid());
 
-export function jsonError(message: string, status: number, code?: string) {
+export function getRequestId(request: Request) {
+  return request.headers.get("x-request-id") ?? crypto.randomUUID();
+}
+
+export function jsonError(message: string, status: number, code?: string, requestId?: string) {
   return NextResponse.json(
     {
       error: {
         code: code ?? "REQUEST_ERROR",
         message,
+        statusCode: status,
+        requestId,
       },
     },
     { status },

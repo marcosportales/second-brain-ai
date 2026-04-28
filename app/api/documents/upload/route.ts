@@ -4,6 +4,8 @@ import { documents } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/session";
 import { saveFileLocally } from "@/lib/ingestion/storage";
 import { env } from "@/lib/env";
+import { markOnboardingStep } from "@/lib/onboarding/progress";
+import { trackEvent } from "@/lib/observability/events";
 
 const allowedTypes = new Set([
   "application/pdf",
@@ -46,6 +48,13 @@ export async function POST(request: Request) {
       name: documents.name,
       status: documents.status,
     });
+
+  await markOnboardingStep(userId, "create_document");
+  await trackEvent("document_uploaded", {
+    documentId: record.id,
+    mimeType: file.type,
+    size: file.size,
+  }, userId);
 
   return NextResponse.json(record);
 }

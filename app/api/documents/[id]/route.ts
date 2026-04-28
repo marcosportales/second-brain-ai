@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { unlink } from "node:fs/promises";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db/client";
 import { documents } from "@/lib/db/schema";
@@ -49,5 +50,47 @@ export async function DELETE(
     return NextResponse.json({ ok: true });
   } catch (error) {
     return handleRouteError(error, "Failed to delete document");
+  }
+}
+
+const patchBodySchema = z.object({
+  tags: z.array(z.string().trim().min(1).max(30)).max(10),
+});
+
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const userId = await requireUser();
+    const params = await context.params;
+    const documentId = parseUuidParam(params, "id", "Invalid document id");
+    if (documentId instanceof NextResponse) {
+      return documentId;
+    }
+    const parsed = patchBodySchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const [updated] = await db
+      .update(documents)
+      .set({
+        tags: parsed.data.tags,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(documents.id, documentId), eq(documents.userId, userId)))
+      .returning({
+        id: documents.id,
+        tags: documents.tags,
+      });
+
+    if (!updated) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return handleRouteError(error, "Failed to update document");
   }
 }

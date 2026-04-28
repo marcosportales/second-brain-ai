@@ -6,6 +6,8 @@ type DocumentItem = {
   id: string;
   name: string;
   status: string;
+  sourceType: string;
+  tags: string[];
   parseError: string | null;
   size: number;
   createdAt: string | Date;
@@ -19,6 +21,8 @@ export function DocumentManager({ initialDocuments }: { initialDocuments: Docume
   const [isUploading, setIsUploading] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<DocumentItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({});
+  const [savingTagsId, setSavingTagsId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
@@ -154,6 +158,33 @@ export function DocumentManager({ initialDocuments }: { initialDocuments: Docume
     await refresh();
   }
 
+  async function saveTags(document: DocumentItem) {
+    const raw = tagDrafts[document.id] ?? document.tags.join(", ");
+    const tags = raw
+      .split(",")
+      .map((tag) => tag.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 10);
+    setSavingTagsId(document.id);
+    setGlobalError(null);
+    const response = await fetch(`/api/documents/${document.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags }),
+    });
+    setSavingTagsId(null);
+    if (!response.ok) {
+      setGlobalError("No se pudieron guardar las etiquetas");
+      return;
+    }
+    await fetch("/api/onboarding", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ step: "tag_document" }),
+    });
+    await refresh();
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,380px)_1fr] lg:items-start xl:gap-5">
       <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
@@ -239,6 +270,35 @@ export function DocumentManager({ initialDocuments }: { initialDocuments: Docume
                     <p className="mt-1 text-xs text-zinc-500">
                       {formatFileSize(document.size)} - {formatDate(document.createdAt)}
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {document.tags.length ? (
+                        document.tags.map((tag) => (
+                          <span key={tag} className="rounded bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700">
+                            #{tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-zinc-400">Sin etiquetas</span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
+                        value={tagDrafts[document.id] ?? document.tags.join(", ")}
+                        onChange={(event) =>
+                          setTagDrafts((current) => ({ ...current, [document.id]: event.target.value }))
+                        }
+                        placeholder="ej. legal, onboarding"
+                      />
+                      <button
+                        type="button"
+                        className="rounded border border-zinc-300 px-2 py-1 text-xs disabled:opacity-60"
+                        onClick={() => void saveTags(document)}
+                        disabled={savingTagsId === document.id}
+                      >
+                        {savingTagsId === document.id ? "Guardando..." : "Guardar tags"}
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
                     <span

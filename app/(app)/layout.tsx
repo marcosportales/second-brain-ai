@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
+import { AppNav } from "@/components/app/app-nav";
 
 export default async function AppLayout({
   children,
@@ -20,9 +21,7 @@ export default async function AppLayout({
             <Link href="/chat" className="font-semibold">
               Second Brain AI
             </Link>
-            <Link href="/documents" className="text-sm text-zinc-600">
-              Documentos
-            </Link>
+            <AppNav />
           </div>
           <form
             action={async () => {

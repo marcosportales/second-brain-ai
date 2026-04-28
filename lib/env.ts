@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(1),
+  APP_BASE_URL: z.url().default("http://localhost:3000"),
   AI_PROVIDER: z.enum(["openai", "ollama"]).default("openai"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_CHAT_MODEL: z.string().default("gpt-4o-mini"),
